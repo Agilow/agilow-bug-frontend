@@ -6,7 +6,6 @@ export function mountWidget(): void {
   const container: HTMLDivElement = document.createElement("div");
   document.body.appendChild(container);
 
-  // Tell TypeScript that this will hold a React root
   const root = ReactDOM.createRoot(container as HTMLElement);
   root.render(<AgiloWidget />);
 }
