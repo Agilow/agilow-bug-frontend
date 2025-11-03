@@ -4,6 +4,7 @@ import path from "path";
 
 export default defineConfig({
   plugins: [react()],
+  base: "/agilow-bug-frontend/",
   build: {
     lib: {
       entry: path.resolve(__dirname, "src/main.tsx"),
