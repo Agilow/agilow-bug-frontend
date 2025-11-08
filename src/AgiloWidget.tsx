@@ -6,7 +6,16 @@ import { useWidgetRecord } from "./useWidgetRecord";
 
 function AgiloWidget() {
     const [open,setOpen] = useState(false);
-    const { recording, startRecording, stopRecording, recordedBlob } = useWidgetRecord();
+
+    const {
+    recording,
+    screenBlob,
+    micBlob,
+    startScreenRecording,
+    stopScreenRecording,
+    startVoiceRecording,
+    stopVoiceRecording,
+    } = useWidgetRecord();
 
     useEffect(() => {
         const style = document.createElement("style");
@@ -19,9 +28,15 @@ function AgiloWidget() {
             setOpen(!open);   
         }
         else{
-            startRecording();
+            startScreenRecording();
+            startVoiceRecording();
         }
-        console.log({ recording, open, recordedBlob });
+    }
+
+    const handleEndCall = () =>{
+        stopScreenRecording();
+        stopVoiceRecording();
+        // setOpen(false);
     }
 
     
@@ -32,9 +47,22 @@ function AgiloWidget() {
         </button>
         {open && (
             <div className="agilow-frame">
-                
+                {screenBlob && micBlob && (
+                <>
+                <video
+                    src={URL.createObjectURL(screenBlob)}
+                    controls
+                    style={{ width: "100%", borderRadius: "8px", marginTop: "12px" }}
+                />
+                <audio
+                    src={URL.createObjectURL(micBlob)}
+                    controls
+                    style={{ width: "100%", marginTop: "12px" }}
+                />
+                </>
+                )}
                 <button
-                    onClick={stopRecording} 
+                    onClick={handleEndCall} 
                     style={{
                       position: "absolute", 
                       bottom: "12px", 

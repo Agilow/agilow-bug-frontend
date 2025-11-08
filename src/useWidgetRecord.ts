@@ -1,69 +1,108 @@
+
 import { useState, useRef } from "react";
 
-export function useWidgetRecord() { 
+export function useWidgetRecord() {
+  // State tracking
   const [recording, setRecording] = useState(false); 
-  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null); 
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null); 
-  const chunksRef = useRef<BlobPart[]>([]); 
+  const [screenBlob, setScreenBlob] = useState<Blob | null>(null); 
+  const [micBlob, setMicBlob] = useState<Blob | null>(null); 
 
-  const startRecording = async () => { 
+  // References for MediaRecorder and data chunks
+  const screenRecorderRef = useRef<MediaRecorder | null>(null); 
+  const micRecorderRef = useRef<MediaRecorder | null>(null); 
+  const screenChunksRef = useRef<BlobPart[]>([]); 
+  const micChunksRef = useRef<BlobPart[]>([]); 
+
+  // ===== SCREEN RECORDING ===== 
+  const startScreenRecording = async () => {
     try {
-      // Request permission to record screen + audio 
       const screenStream = await (navigator.mediaDevices as any).getDisplayMedia({
         video: true,
-        audio: true,
-      });
+        audio: true, // optional system audio
+      }); 
 
-      // Request microphone audio 
+      const screenRecorder = new MediaRecorder(screenStream, {
+        mimeType: "video/webm;codecs=vp9,opus",
+      }); 
+
+      screenChunksRef.current = []; 
+      screenRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) screenChunksRef.current.push(e.data);
+      }; 
+
+      screenRecorder.onstop = () => {
+        const blob = new Blob(screenChunksRef.current, { type: "video/webm" });
+        setScreenBlob(blob);
+        screenChunksRef.current = [];
+        screenStream.getTracks().forEach((t) => t.stop());
+      }; 
+
+      screenRecorder.start(1000); // emit chunks every 1s
+      screenRecorderRef.current = screenRecorder;
+      setRecording(true); 
+      console.log("🎥 Screen recording started"); 
+    } catch (err) {
+      console.error("Error starting screen recording:", err);
+      alert("Unable to start screen recording. Check permissions."); 
+    }
+  };
+
+  const stopScreenRecording = () => {
+    if (screenRecorderRef.current && screenRecorderRef.current.state === "recording") {
+      screenRecorderRef.current.stop();
+      setRecording(false);
+      console.log("🛑 Screen recording stopped"); 
+    }
+  };
+
+  // ===== VOICE RECORDING ===== 
+  const startVoiceRecording = async () => {
+    try {
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
-      });
+      }); 
 
-      // Merge video + audio tracks 
-      const combinedStream = new MediaStream([
-        ...screenStream.getVideoTracks(),
-        ...screenStream.getAudioTracks(),
-        ...micStream.getAudioTracks(),
-      ]);
+      const micRecorder = new MediaRecorder(micStream, {
+        mimeType: "audio/webm;codecs=opus",
+      }); 
 
-      // Create recorder 
-      const mediaRecorder = new MediaRecorder(combinedStream, {
-        mimeType: "video/webm;codecs=vp9,opus",
-      });
+      micChunksRef.current = []; 
+      micRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) micChunksRef.current.push(e.data);
+      }; 
 
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
+      micRecorder.onstop = () => {
+        const blob = new Blob(micChunksRef.current, { type: "audio/webm" });
+        setMicBlob(blob);
+        micChunksRef.current = [];
+        micStream.getTracks().forEach((t) => t.stop());
+      }; 
 
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: "video/webm" });
-        setRecordedBlob(blob);
-        chunksRef.current = [];
-        combinedStream.getTracks().forEach((track) => track.stop()); 
-      };
-
-      mediaRecorder.start();
-      setRecording(true);
+      micRecorder.start(1000); 
+      micRecorderRef.current = micRecorder;
+      setRecording(true); 
+      console.log("🎙️ Voice recording started"); 
     } catch (err) {
-      console.error("Error starting recording:", err);
-      alert("Unable to start screen/mic recording. Check browser permissions."); 
+      console.error("Error starting mic recording:", err);
+      alert("Unable to start microphone recording. Check permissions."); 
     }
   };
 
-  const stopRecording = () => { 
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === "recording") {
-      mediaRecorderRef.current.stop();
+  const stopVoiceRecording = () => {
+    if (micRecorderRef.current && micRecorderRef.current.state === "recording") {
+      micRecorderRef.current.stop();
       setRecording(false);
+      console.log("🛑 Voice recording stopped"); 
     }
   };
 
-  return { 
+  return {
     recording, 
-    recordedBlob, 
-    startRecording, 
-    stopRecording, 
+    screenBlob, 
+    micBlob, 
+    startScreenRecording, 
+    stopScreenRecording, 
+    startVoiceRecording, 
+    stopVoiceRecording, 
   };
 }
