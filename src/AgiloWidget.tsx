@@ -16,7 +16,7 @@ function AgiloWidget() {
     const [inputValue, setInputValue] = useState("");
     const [reportOpen, setReportOpen] = useState(false);
     const [reportData, setReportData] = useState(null);
-
+    const chatEndRef = React.useRef<HTMLDivElement | null>(null);
 
     const {
     recording,
@@ -34,6 +34,13 @@ function AgiloWidget() {
         style.textContent = cssText;
         document.head.appendChild(style);
     }, []);
+
+    useEffect(() => {
+    if (chatEndRef.current) {
+        chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+    }, [messagesList]);
+
 
     const handleWidgetButton = () => {
         if (recording) {
@@ -168,6 +175,7 @@ const handleProcess = async () => {
                         {msg.text}
                         </div>
                     ))}
+                      <div ref={chatEndRef} />
                     </div>
 
                     <div className="agilow-chat-input">
