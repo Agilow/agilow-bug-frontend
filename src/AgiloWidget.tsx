@@ -12,6 +12,8 @@ function AgiloWidget() {
         { id: 2, sender: "ai", text: "Thanks for reporting that! What file type were you uploading?" },
         { id: 3, sender: "user", text: "It was a .png image from my phone gallery." },
     ];
+    const [messagesList, setMessagesList] = useState(messages);
+    const [inputValue, setInputValue] = useState(""); 
 
     const {
     recording,
@@ -46,6 +48,18 @@ function AgiloWidget() {
         // setOpen(false);
     }
 
+    const handleSend = () => {
+        if (!inputValue.trim()) return; // ignore empty input
+
+        const newMessage = {
+            id: messagesList.length + 1,
+            sender: "user",
+            text: inputValue.trim(),
+        };
+
+        setMessagesList((prev) => [...prev, newMessage]); // add to chat
+        setInputValue(""); // clear input
+    };
     
     return (
     <>
@@ -61,7 +75,7 @@ function AgiloWidget() {
 
                 <div className="agilow-chat">
                     <div className="agilow-chat-messages">
-                    {messages.map((msg) => (
+                    {messagesList.map((msg) => (
                         <div
                         key={msg.id}
                         className={`agilow-message ${
@@ -74,12 +88,14 @@ function AgiloWidget() {
                     </div>
 
                     <div className="agilow-chat-input">
-                    <input
+                        <input
                         type="text"
                         placeholder="Type a message..."
                         className="agilow-input"
-                    />
-                    <button className="agilow-send">Send</button>
+                        value={inputValue} 
+                        onChange={(e) => setInputValue(e.target.value)} 
+                        />
+                        <button className="agilow-send" onClick={handleSend}>Send</button> 
                     </div>
                 </div>
 
