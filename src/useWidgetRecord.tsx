@@ -63,9 +63,12 @@ export function useWidgetRecord() {
         video: false,
       }); 
 
-      const micRecorder = new MediaRecorder(micStream, {
-        mimeType: "audio/webm;codecs=opus",
-      }); 
+  const micRecorder = new MediaRecorder(micStream, {
+    mimeType: MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
+      ? "audio/mp4;codecs=aac"
+      : "audio/webm;codecs=opus",
+  });
+
 
       micChunksRef.current = []; 
       micRecorder.ondataavailable = (e) => {
@@ -100,20 +103,56 @@ export function useWidgetRecord() {
   
   const lastMicChunkIndex = useRef(0);
 
-  const getNewMicBlob = (): Blob | null => {
-    const allChunks = micChunksRef.current;
-    if (lastMicChunkIndex.current >= allChunks.length) {
-      return null;
+ const getNewMicBlob = async (): Promise<Blob | null> => {
+  const recorder = micRecorderRef.current;
+  if (!recorder || recorder.state !== "recording") {
+    console.warn("⚠️ No active mic recorder found");
+    return null;
+  }
+
+  return new Promise<Blob | null>((resolve) => {
+    try {
+      const oldStream = recorder.stream;
+      const oldMime = recorder.mimeType || "audio/webm;codecs=opus";
+      const chunks: BlobPart[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const blob = new Blob(chunks, { type: oldMime });
+        console.log(`🎤 Captured mic blob (${blob.size} bytes)`);
+
+        // ✅ Restart recording immediately
+        try {
+          const newRecorder = new MediaRecorder(oldStream, { mimeType: oldMime });
+          const newChunks: BlobPart[] = [];
+          newRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) newChunks.push(e.data);
+          };
+          newRecorder.start(1000);
+          micRecorderRef.current = newRecorder;
+          micChunksRef.current = newChunks;
+          console.log("🎙️ Restarted mic recording");
+        } catch (err) {
+          console.error("❌ Failed to restart mic recording:", err);
+        }
+
+        resolve(blob);
+      };
+
+      // ✅ Stop current recording to finalize blob
+      recorder.stop();
+    } catch (err) {
+      console.error("❌ Error while fetching mic blob:", err);
+      resolve(null);
     }
+  });
+};
 
-    // Get only the new chunks since last call
-    const newChunks = allChunks.slice(lastMicChunkIndex.current);
-    lastMicChunkIndex.current = allChunks.length; // update position
 
-    // Combine new chunks into a new blob
-    const partialBlob = new Blob(newChunks, { type: "audio/webm" });
-    return partialBlob;
-  };
+
 
 
   return {

@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import "./AgiloWidget.css";
 import cssText from "./AgiloWidget.css?inline";
 import { useWidgetRecord } from "./useWidgetRecord"; 
+import { transcribeAudio } from "./transcribeAudio";
+
 
 function AgiloWidget() {
     const debug = false;
@@ -48,10 +50,39 @@ function AgiloWidget() {
         stopVoiceRecording();
         // setOpen(false);
     }
-    const handleProcess = () =>{
-        const partialMicBlob = getNewMicBlob();
-        console.log("Processing blob:", {partialMicBlob });
+
+const handleProcess = async () => {
+  const partialMicBlob = await getNewMicBlob();
+  console.log("Processing blob:", { partialMicBlob });
+
+  if (!partialMicBlob || partialMicBlob.size < 5000) {
+    console.warn("⚠️ Skipping small or empty audio chunk:", partialMicBlob?.size);
+    return;
+  }
+
+  // 🎧 Play audio safely using FileReader
+  const reader = new FileReader();
+  reader.onloadend = () => {
+    const audio = new Audio(reader.result as string);
+    audio.play().catch((err) => console.warn("⚠️ Audio playback failed:", err));
+  };
+  reader.readAsDataURL(partialMicBlob); // converts blob → base64 playable source
+
+  try {
+    console.log("🎧 Sending partial blob to API...");
+    const result = await transcribeAudio(partialMicBlob);
+
+    if (result?.success !== false && result?.transcript) {
+      console.log("📝 Transcript:", result.transcript);
+    } else {
+      console.error("❌ API returned error:", result?.error || result);
     }
+  } catch (err) {
+    console.error("💥 Transcription failed:", err);
+  }
+};
+
+
 
     const handleSend = () => {
         if (!inputValue.trim()) return; // ignore empty input
