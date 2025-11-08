@@ -6,6 +6,11 @@ import { useWidgetRecord } from "./useWidgetRecord";
 
 function AgiloWidget() {
     const [open,setOpen] = useState(false);
+    const dummyMessages = [
+        { id: 1, sender: "user", text: "The app crashes when I upload a file." },
+        { id: 2, sender: "ai", text: "Thanks for reporting that! What file type were you uploading?" },
+        { id: 3, sender: "user", text: "It was a .png image from my phone gallery." },
+    ];
 
     const {
     recording,
@@ -47,19 +52,20 @@ function AgiloWidget() {
         </button>
         {open && (
             <div className="agilow-frame">
-                {screenBlob && micBlob && (
-                <>
+                {screenBlob && (
                 <video
                     src={URL.createObjectURL(screenBlob)}
                     controls
                     style={{ width: "100%", borderRadius: "8px", marginTop: "12px" }}
                 />
+
+                )}
+                {micBlob && (
                 <audio
                     src={URL.createObjectURL(micBlob)}
                     controls
                     style={{ width: "100%", marginTop: "12px" }}
                 />
-                </>
                 )}
                 <button
                     onClick={handleEndCall} 
