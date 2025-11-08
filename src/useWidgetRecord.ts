@@ -34,8 +34,8 @@ export function useWidgetRecord() {
         const blob = new Blob(screenChunksRef.current, { type: "video/webm" });
         setScreenBlob(blob);
         screenChunksRef.current = [];
-        screenStream.getTracks().forEach((t) => t.stop());
-      }; 
+        screenStream.getTracks().forEach((track: MediaStreamTrack) => track.stop());      
+    }; 
 
       screenRecorder.start(1000); // emit chunks every 1s
       screenRecorderRef.current = screenRecorder;
@@ -60,6 +60,7 @@ export function useWidgetRecord() {
     try {
       const micStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
+        video: false,
       }); 
 
       const micRecorder = new MediaRecorder(micStream, {
