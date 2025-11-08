@@ -16,6 +16,7 @@ function AgiloWidget() {
     const [inputValue, setInputValue] = useState("");
     const [reportOpen, setReportOpen] = useState(false);
     const [reportData, setReportData] = useState(null);
+    const [jiraTicket, setJiraTicket] = useState<any>(null);
     const chatEndRef = React.useRef<HTMLDivElement | null>(null);
 
     const {
@@ -56,6 +57,20 @@ function AgiloWidget() {
     const handleEndCall = () =>{
         stopScreenRecording();
         stopVoiceRecording();
+        
+        // If we have a Jira ticket, add it to chat
+        if (jiraTicket) {
+            const jiraMessage = {
+                id: messagesList.length + 1,
+                sender: "system",
+                text: "Bug report created successfully!",
+                type: "jira_ticket",
+                jiraTicket: jiraTicket
+            };
+            setMessagesList((prev) => [...prev, jiraMessage]);
+            setJiraTicket(null); // Clear after displaying
+        }
+        
         setOpen(false);
     }
 
@@ -119,8 +134,9 @@ const handleProcess = async () => {
       setMessagesList((prev) => [...prev, backendData.message]);
     }
 
-    // If bug report is complete, show overlay
-    if (backendData?.bug_report_complete && backendData?.collected_info) {
+    // If bug report is complete, store Jira ticket data
+    if (backendData?.bug_report_complete && backendData?.jira_ticket?.success) {
+      setJiraTicket(backendData.jira_ticket);
       setReportData(backendData);
       setReportOpen(true);
     }
@@ -178,16 +194,45 @@ const handleProcess = async () => {
             <div className="agilow-frame">
                 <div className="agilow-chat">
                     <div className="agilow-chat-messages">
-                    {messagesList.map((msg) => (
-                        <div
-                        key={msg.id}
-                        className={`agilow-message ${
-                            msg.sender === "user" ? "user-msg" : "ai-msg"
-                        }`}
-                        >
-                        {msg.text}
-                        </div>
-                    ))}
+                    {messagesList.map((msg) => {
+                        // Render Jira ticket card for special messages
+                        if (msg.type === "jira_ticket" && msg.jiraTicket) {
+                            return (
+                                <div key={msg.id} className="agilow-jira-ticket-card">
+                                    <div className="agilow-jira-ticket-header">
+                                        <span className="agilow-jira-ticket-icon">✓</span>
+                                        <span className="agilow-jira-ticket-title">Bug Report Created Successfully!</span>
+                                    </div>
+                                    <div className="agilow-jira-ticket-content">
+                                        <div className="agilow-jira-ticket-key">
+                                            Jira Ticket: <strong>{msg.jiraTicket.issue_key}</strong>
+                                        </div>
+                                        {msg.jiraTicket.issue_url && (
+                                            <a
+                                                href={msg.jiraTicket.issue_url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="agilow-jira-ticket-link"
+                                            >
+                                                View in Jira →
+                                            </a>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        }
+                        // Render regular messages
+                        return (
+                            <div
+                                key={msg.id}
+                                className={`agilow-message ${
+                                    msg.sender === "user" ? "user-msg" : "ai-msg"
+                                }`}
+                            >
+                                {msg.text}
+                            </div>
+                        );
+                    })}
                       <div ref={chatEndRef} />
                     </div>
 
