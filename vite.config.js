@@ -13,5 +13,6 @@ export default defineConfig({
       fileName: () => "widget.js",
       formats: ["iife"], // single runnable script
     },
+    cssCodeSplit: false,
   },
 });
