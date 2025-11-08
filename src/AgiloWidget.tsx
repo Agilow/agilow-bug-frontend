@@ -86,7 +86,7 @@ function AgiloWidget() {
                       zIndex: 10000, 
                     }}
                   >
-                    ⏹
+                    ■
                   </button>
             </div>
         )}
