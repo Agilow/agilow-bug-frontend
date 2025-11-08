@@ -5,6 +5,7 @@ import cssText from "./AgiloWidget.css?inline";
 import { useWidgetRecord } from "./useWidgetRecord"; 
 
 function AgiloWidget() {
+    const debug = false;
     const [open,setOpen] = useState(false);
     const dummyMessages = [
         { id: 1, sender: "user", text: "The app crashes when I upload a file." },
@@ -35,6 +36,7 @@ function AgiloWidget() {
         else{
             startScreenRecording();
             startVoiceRecording();
+            // setOpen(!open);  
         }
     }
 
@@ -50,9 +52,38 @@ function AgiloWidget() {
        <button className={`agilow-button ${recording ? "agilow-pulsate" : ""}`} onClick={handleWidgetButton} >
             🐞
         </button>
+        <button onClick={handleEndCall} className="agilow-stop-button">
+            ■
+        </button>
+
         {open && (
             <div className="agilow-frame">
-                {screenBlob && (
+
+                <div className="agilow-chat">
+                    <div className="agilow-chat-messages">
+                    {dummyMessages.map((msg) => (
+                        <div
+                        key={msg.id}
+                        className={`agilow-message ${
+                            msg.sender === "user" ? "user-msg" : "ai-msg"
+                        }`}
+                        >
+                        {msg.text}
+                        </div>
+                    ))}
+                    </div>
+
+                    <div className="agilow-chat-input">
+                    <input
+                        type="text"
+                        placeholder="Type a message..."
+                        className="agilow-input"
+                    />
+                    <button className="agilow-send">Send</button>
+                    </div>
+                </div>
+
+                {debug && screenBlob && (
                 <video
                     src={URL.createObjectURL(screenBlob)}
                     controls
@@ -60,34 +91,13 @@ function AgiloWidget() {
                 />
 
                 )}
-                {micBlob && (
+                {debug && micBlob && (
                 <audio
                     src={URL.createObjectURL(micBlob)}
                     controls
                     style={{ width: "100%", marginTop: "12px" }}
                 />
                 )}
-                <button
-                    onClick={handleEndCall} 
-                    style={{
-                      position: "absolute", 
-                      bottom: "12px", 
-                      right: "12px", 
-                      background: "#ef4444", 
-                      color: "white", 
-                      border: "none", 
-                      borderRadius: "50%", 
-                      padding: "8px 12px", 
-                      cursor: "pointer", 
-                      fontSize: "14px", 
-                      width: "32px", 
-                      height: "32px",
-                      boxShadow: "0 2px 6px rgba(0,0,0,0.25)", 
-                      zIndex: 10000, 
-                    }}
-                  >
-                    ■
-                  </button>
             </div>
         )}
     </>
