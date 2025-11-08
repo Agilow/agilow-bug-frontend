@@ -7,7 +7,7 @@ import { transcribeAudio } from "./transcribeAudio";
 
 
 function AgiloWidget() {
-    const debug = false;
+    const debug = true;
     const [open,setOpen] = useState(false);
     const messages = [
         { id: 1, sender: "ai", text: "Hello! What issue are you having today?" },
@@ -56,7 +56,7 @@ function AgiloWidget() {
     const handleEndCall = () =>{
         stopScreenRecording();
         stopVoiceRecording();
-        // setOpen(false);
+        setOpen(false);
     }
 
 
@@ -158,11 +158,24 @@ const handleProcess = async () => {
             🐞
         </button>
         </div>
+                        {debug && micBlob && (
+                <audio
+                    src={URL.createObjectURL(micBlob)}
+                    controls
+                    style={{ width: "100%", marginTop: "12px" }}
+                />
+                )}{debug && screenBlob && (
+                <video
+                    src={URL.createObjectURL(screenBlob)}
+                    controls
+                    style={{ width: "100%", borderRadius: "8px", marginTop: "12px" }}
+                />
+
+                )}
 
 
         {open && (
             <div className="agilow-frame">
-
                 <div className="agilow-chat">
                     <div className="agilow-chat-messages">
                     {messagesList.map((msg) => (
@@ -190,21 +203,8 @@ const handleProcess = async () => {
                     </div>
                 </div>
 
-                {debug && screenBlob && (
-                <video
-                    src={URL.createObjectURL(screenBlob)}
-                    controls
-                    style={{ width: "100%", borderRadius: "8px", marginTop: "12px" }}
-                />
-
-                )}
-                {debug && micBlob && (
-                <audio
-                    src={URL.createObjectURL(micBlob)}
-                    controls
-                    style={{ width: "100%", marginTop: "12px" }}
-                />
-                )}
+                
+                
             </div>
         )}
     </>
