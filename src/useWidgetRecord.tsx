@@ -103,51 +103,61 @@ export function useWidgetRecord() {
   
   const lastMicChunkIndex = useRef(0);
 
- const getNewMicBlob = async (): Promise<Blob | null> => {
-  const recorder = micRecorderRef.current;
-  if (!recorder || recorder.state !== "recording") {
-    console.warn("⚠️ No active mic recorder found");
-    return null;
-  }
-
-  return new Promise<Blob | null>((resolve) => {
-    try {
-      const oldStream = recorder.stream;
-      const oldMime = recorder.mimeType || "audio/webm;codecs=opus";
-      const chunks: BlobPart[] = [];
-
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      recorder.onstop = async () => {
-        const blob = new Blob(chunks, { type: oldMime });
-        console.log(`🎤 Captured mic blob (${blob.size} bytes)`);
-
-        // ✅ Restart recording immediately
-        try {
-          const newRecorder = new MediaRecorder(oldStream, { mimeType: oldMime });
-          const newChunks: BlobPart[] = [];
-          newRecorder.ondataavailable = (e) => {
-            if (e.data.size > 0) newChunks.push(e.data);
-          };
-          newRecorder.start(1000);
-          micRecorderRef.current = newRecorder;
-          micChunksRef.current = newChunks;
-          console.log("🎙️ Restarted mic recording");
-        } catch (err) {
-          console.error("❌ Failed to restart mic recording:", err);
-        }
-
-        resolve(blob);
-      };
-
-      // ✅ Stop current recording to finalize blob
-      recorder.stop();
-    } catch (err) {
-      console.error("❌ Error while fetching mic blob:", err);
+const getNewMicBlob = async (): Promise<Blob | null> => {
+  return new Promise((resolve) => {
+    const recorder = micRecorderRef.current;
+    if (!recorder || recorder.state !== "recording") {
+      console.warn("⚠️ No active mic recording to split.");
       resolve(null);
+      return;
     }
+
+    console.log("⏸️ Stopping mic recording to collect chunk...");
+
+    // Temporarily copy existing chunks
+    const oldChunks = [...micChunksRef.current];
+    micChunksRef.current = [];
+
+    // Wait for final chunk before resolving
+    const handleData = (e: BlobEvent) => {
+      if (e.data && e.data.size > 0) oldChunks.push(e.data);
+    };
+
+    recorder.addEventListener("dataavailable", handleData, { once: true });
+
+    recorder.onstop = async () => {
+      const blob = new Blob(oldChunks, { type: "audio/webm" });
+
+      console.log("✅ Mic chunk finalized:", blob.size, "bytes");
+
+      // Fully stop the stream tracks
+      recorder.stream.getTracks().forEach((t) => t.stop());
+
+      // Immediately restart
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const newRecorder = new MediaRecorder(newStream, {
+          mimeType: MediaRecorder.isTypeSupported("audio/mp4;codecs=aac")
+            ? "audio/mp4;codecs=aac"
+            : "audio/webm;codecs=opus",
+        });
+
+        micChunksRef.current = [];
+        newRecorder.ondataavailable = (ev) => {
+          if (ev.data.size > 0) micChunksRef.current.push(ev.data);
+        };
+
+        newRecorder.start(1000);
+        micRecorderRef.current = newRecorder;
+        console.log("🎙️ Mic recording restarted");
+      } catch (err) {
+        console.error("❌ Failed to restart mic recording:", err);
+      }
+
+      resolve(blob);
+    };
+
+    recorder.stop(); // triggers dataavailable + onstop
   });
 };
 

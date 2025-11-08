@@ -60,20 +60,20 @@ const handleProcess = async () => {
     return;
   }
 
-  // 🎧 Play audio safely using FileReader
-  const reader = new FileReader();
-  reader.onloadend = () => {
-    const audio = new Audio(reader.result as string);
-    audio.play().catch((err) => console.warn("⚠️ Audio playback failed:", err));
-  };
-  reader.readAsDataURL(partialMicBlob); // converts blob → base64 playable source
-
   try {
     console.log("🎧 Sending partial blob to API...");
     const result = await transcribeAudio(partialMicBlob);
 
     if (result?.success !== false && result?.transcript) {
       console.log("📝 Transcript:", result.transcript);
+        setMessagesList((prev) => [
+        ...prev,
+        {
+          id: prev.length + 1,
+          sender: "user", // or "ai" depending on context
+          text: result.transcript,
+        },
+      ]);
     } else {
       console.error("❌ API returned error:", result?.error || result);
     }
