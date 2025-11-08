@@ -23,6 +23,7 @@ function AgiloWidget() {
     stopScreenRecording,
     startVoiceRecording,
     stopVoiceRecording,
+    getNewMicBlob,
     } = useWidgetRecord();
 
     useEffect(() => {
@@ -47,6 +48,10 @@ function AgiloWidget() {
         stopVoiceRecording();
         // setOpen(false);
     }
+    const handleProcess = () =>{
+        const partialMicBlob = getNewMicBlob();
+        console.log("Processing blob:", {partialMicBlob });
+    }
 
     const handleSend = () => {
         if (!inputValue.trim()) return; // ignore empty input
@@ -63,12 +68,17 @@ function AgiloWidget() {
     
     return (
     <>
-       <button className={`agilow-button ${recording ? "agilow-pulsate" : ""}`} onClick={handleWidgetButton} >
+        <div className="agilow-button-group">
+        <button className="agilow-stop-button" onClick={handleEndCall}>⏹</button>
+        <button className="agilow-process-button" onClick={handleProcess}>➤</button>
+        <button
+            className={`agilow-button ${recording ? "agilow-pulsate" : ""}`}
+            onClick={handleWidgetButton}
+        >
             🐞
         </button>
-        <button onClick={handleEndCall} className="agilow-stop-button">
-            ■
-        </button>
+        </div>
+
 
         {open && (
             <div className="agilow-frame">

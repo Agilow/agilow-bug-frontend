@@ -97,6 +97,25 @@ export function useWidgetRecord() {
     }
   };
 
+  
+  const lastMicChunkIndex = useRef(0);
+
+  const getNewMicBlob = (): Blob | null => {
+    const allChunks = micChunksRef.current;
+    if (lastMicChunkIndex.current >= allChunks.length) {
+      return null;
+    }
+
+    // Get only the new chunks since last call
+    const newChunks = allChunks.slice(lastMicChunkIndex.current);
+    lastMicChunkIndex.current = allChunks.length; // update position
+
+    // Combine new chunks into a new blob
+    const partialBlob = new Blob(newChunks, { type: "audio/webm" });
+    return partialBlob;
+  };
+
+
   return {
     recording, 
     screenBlob, 
@@ -105,5 +124,6 @@ export function useWidgetRecord() {
     stopScreenRecording, 
     startVoiceRecording, 
     stopVoiceRecording, 
+    getNewMicBlob,
   };
 }
