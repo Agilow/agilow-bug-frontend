@@ -7,7 +7,7 @@ import { useWidgetRecord } from "./useWidgetRecord";
 function AgiloWidget() {
     const debug = false;
     const [open,setOpen] = useState(false);
-    const dummyMessages = [
+    const messages = [
         { id: 1, sender: "user", text: "The app crashes when I upload a file." },
         { id: 2, sender: "ai", text: "Thanks for reporting that! What file type were you uploading?" },
         { id: 3, sender: "user", text: "It was a .png image from my phone gallery." },
@@ -61,7 +61,7 @@ function AgiloWidget() {
 
                 <div className="agilow-chat">
                     <div className="agilow-chat-messages">
-                    {dummyMessages.map((msg) => (
+                    {messages.map((msg) => (
                         <div
                         key={msg.id}
                         className={`agilow-message ${
