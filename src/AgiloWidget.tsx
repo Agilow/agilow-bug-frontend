@@ -10,12 +10,13 @@ function AgiloWidget() {
     const debug = false;
     const [open,setOpen] = useState(false);
     const messages = [
-        { id: 1, sender: "user", text: "The app crashes when I upload a file." },
-        { id: 2, sender: "ai", text: "Thanks for reporting that! What file type were you uploading?" },
-        { id: 3, sender: "user", text: "It was a .png image from my phone gallery." },
+        { id: 1, sender: "ai", text: "Hello! What issue are you having today?" },
     ];
     const [messagesList, setMessagesList] = useState(messages);
-    const [inputValue, setInputValue] = useState(""); 
+    const [inputValue, setInputValue] = useState("");
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportData, setReportData] = useState(null);
+
 
     const {
     recording,
@@ -51,6 +52,7 @@ function AgiloWidget() {
         // setOpen(false);
     }
 
+
 const handleProcess = async () => {
   const partialMicBlob = await getNewMicBlob();
   console.log("Processing blob:", { partialMicBlob });
@@ -64,23 +66,63 @@ const handleProcess = async () => {
     console.log("🎧 Sending partial blob to API...");
     const result = await transcribeAudio(partialMicBlob);
 
-    if (result?.success !== false && result?.transcript) {
-      console.log("📝 Transcript:", result.transcript);
-        setMessagesList((prev) => [
-        ...prev,
-        {
-          id: prev.length + 1,
-          sender: "user", // or "ai" depending on context
-          text: result.transcript,
-        },
-      ]);
-    } else {
-      console.error("❌ API returned error:", result?.error || result);
+    if (!result?.success || !result?.transcript) {
+      console.error("❌ API returned error or missing transcript:", result);
+      return;
+    }
+
+    const userTranscript = result.transcript.trim();
+    console.log("📝 Transcript:", userTranscript);
+
+    // Add the transcript as a new user message
+    const newMessage = {
+      id: messagesList.length + 1,
+      sender: "user",
+      text: userTranscript,
+    };
+
+    setMessagesList((prev) => [...prev, newMessage]);
+
+    // 🔗 Prepare request body for backend
+    const payload = {
+      messages: [...messagesList, newMessage],
+      session_id: "test-session-123",
+      user_id: "test-user-456",
+      console_logs:
+        "Error: Cannot read property 'upload' of undefined\n  at FileUploader.upload (uploader.js:45)",
+      screen_recording: null, // or screenBlob if you want to include it
+    };
+
+    console.log("🌐 Sending payload to backend:", payload);
+
+    const response = await fetch(
+      "https://agilow-bug-backend.onrender.com/bug-report-chat",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const backendData = await response.json();
+    console.log("🤖 Backend response:", backendData);
+
+    // Add AI message to chat if exists
+    if (backendData?.message) {
+      setMessagesList((prev) => [...prev, backendData.message]);
+    }
+
+    // If bug report is complete, show overlay
+    if (backendData?.bug_report_complete && backendData?.collected_info) {
+      setReportData(backendData);
+      setReportOpen(true);
     }
   } catch (err) {
-    console.error("💥 Transcription failed:", err);
+    console.error("💥 handleProcess error:", err);
   }
 };
+
+
 
 
 
