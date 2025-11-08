@@ -47,7 +47,7 @@ function AgiloWidget() {
     
     return (
     <>
-       <button className="agilow-button" onClick={handleWidgetButton}>
+       <button className={`agilow-button ${recording ? "agilow-pulsate" : ""}`} onClick={handleWidgetButton} >
             🐞
         </button>
         {open && (
