@@ -7,7 +7,7 @@ import { transcribeAudio } from "./transcribeAudio";
 
 
 function AgiloWidget() {
-    const debug = true;
+    const debug = false;
     const [open,setOpen] = useState(false);
     const messages = [
         { id: 1, sender: "ai", text: "Hello! What issue are you having today?" },
